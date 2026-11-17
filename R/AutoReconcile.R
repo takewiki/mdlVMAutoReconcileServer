@@ -45,6 +45,38 @@ AutoReconcileUpdateServer <- function(input, output, session, dms_token, erp_tok
   })
 
 
+  data_object_IsUnreconciled = shiny::eventReactive(input$btn_AutoReconcile_view_IsUnreconciled,{
+
+    text_AutoReconcile_YearMonth = tsui::var_text("text_AutoReconcile_YearMonth")
+    text_AutoReconcile_DeliveryLocation = tsui::var_text("text_AutoReconcile_DeliveryLocation")
+    text_AutoReconcile_BillNo = tsui::var_text("text_AutoReconcile_BillNo")
+
+    FYearMonth=text_AutoReconcile_YearMonth()
+    FDeliveryLocation=text_AutoReconcile_DeliveryLocation()
+    FBillNo=text_AutoReconcile_BillNo()
+
+
+    data = mdlVMAutoReconcilePkg::AutoReconcile_view(erp_token = erp_token,FYearMonth = FYearMonth,FDeliveryLocation = FDeliveryLocation,FBillNo = FBillNo)
+
+    data <- data[data$状态 == "未勾稽", ]
+
+    return(data)
+  })
+
+  shiny::observeEvent(input$btn_AutoReconcile_view_IsUnreconciled, {
+
+
+    data = data_object_IsUnreconciled()
+
+
+    output$AutoReconcile_object_dt <- DT::renderDataTable(data,selection = 'single')
+
+    tsui::run_download_xlsx(id = 'dl_AutoReconcile_view_IsUnreconciled',data = data,filename='合法性检查结果.xlsx')
+
+
+
+  })
+
 
 
   #设置内容
@@ -53,7 +85,7 @@ AutoReconcileUpdateServer <- function(input, output, session, dms_token, erp_tok
     shiny::validate(
       need(length(input$AutoReconcile_object_dt_rows_selected) > 0, "请从对照列表中选中任意一行")
     )
-    data_detail <- data_object()
+    data_detail <- data_object_IsUnreconciled()
 
 
     FBillNo  <- data_detail[as.integer(input$AutoReconcile_object_dt_rows_selected), '出库单号']
